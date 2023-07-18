@@ -4,6 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
+
+	"github.com/amirrmonfared/myhttp/pkg/hasher"
+	httpclient "github.com/amirrmonfared/myhttp/pkg/http-client"
+	"github.com/amirrmonfared/myhttp/pkg/tools/semaphore"
+	"github.com/amirrmonfared/myhttp/pkg/urlprocessor"
 )
 
 const (
@@ -42,6 +47,18 @@ func main() {
 	options := gatherOptions()
 	if err := options.validateOptions(); err != nil {
 		log.Fatal(fmt.Errorf("invalid options: %s", err))
+	}
+
+	httpClient := httpclient.NewDefaultHTTPClient()
+
+	hasher := hasher.NewURLHasher()
+
+	sem := semaphore.NewDefaultSemaphore(options.maxParallelRequests)
+
+	urlProcessor := urlprocessor.NewURLProcessor(httpClient, hasher, sem)
+
+	if err := urlProcessor.ProcessURLs(options.urls); err != nil {
+		log.Fatal(err)
 	}
 
 	log.Println("URLs processed successfully")
